@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Guardarropa - Outfit Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold gradient-bg bg-clip-text text-transparent">
+                        👔 Outfit Assistant
+                    </h1>
+                </div>
+                <div class="hidden md:flex space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Inicio</a>
+                    <a href="/upload" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Subir Ropa</a>
+                    <a href="/wardrobe" class="text-indigo-600 px-3 py-2 rounded-md font-medium border-b-2 border-indigo-600">Mi Guardarropa</a>
+                    <a href="/outfits" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md font-medium">Mis Outfits</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-4xl font-bold text-gray-900">👗 Mi Guardarropa</h2>
+            <a href="/upload" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                + Agregar Prenda
+            </a>
+        </div>
+
+        <!-- Wardrobe Grid -->
+        <div id="wardrobe-grid" class="wardrobe-grid">
+            <!-- Clothing items will be loaded here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="text-6xl mb-4">👔</div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Tu guardarropa está vacío</h3>
+            <p class="text-gray-600 mb-6">Comienza subiendo tu primera prenda</p>
+            <a href="/upload" class="inline-block bg-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                Subir Prenda
+            </a>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        async function loadWardrobe() {
+            showLoading();
+            
+            try {
+                const clothes = await API.getAllClothes();
+                
+                hideLoading();
+                
+                const grid = document.getElementById('wardrobe-grid');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (clothes.length === 0) {
+                    grid.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                
+                grid.innerHTML = '';
+                
+                clothes.forEach(item => {
+                    const card = createClothingCard(item);
+                    grid.appendChild(card);
+                });
+                
+            } catch (error) {
+                hideLoading();
+                showNotification('Error al cargar guardarropa: ' + error.message, 'error');
+            }
+        }
+
+        function createClothingCard(item) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow-md overflow-hidden card-hover';
+            
+            const tagsHtml = Object.entries(item.tags)
+                .map(([type, values]) => 
+                    values.map(v => `<span class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">${v}</span>`).join(' ')
+                )
+                .join(' ');
+            
+            card.innerHTML = `
+                <div class="outfit-item">
+                    <img src="/${item.image_path}" alt="${item.name}" class="w-full h-64 object-cover">
+                </div>
+                <div class="p-4">
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">${item.name || 'Sin nombre'}</h3>
+                    <div class="flex flex-wrap gap-1 mb-3">
+                        ${tagsHtml}
+                    </div>
+                    <button 
+                        onclick="deleteClothing(${item.id})" 
+                        class="w-full bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition font-medium"
+                    >
+                        🗑️ Eliminar
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        async function deleteClothing(id) {
+            if (!confirm('¿Estás seguro de eliminar esta prenda?')) {
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                await API.deleteClothing(id);
+                hideLoading();
+                showNotification('Prenda eliminada', 'success');
+                loadWardrobe(); // Reload
+            } catch (error) {
+                hideLoading();
+                showNotification('Error al eliminar: ' + error.message, 'error');
+            }
+        }
+
+        // Load wardrobe on page load
+        loadWardrobe();
+    </script>
+</body>
+</html>
