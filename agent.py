@@ -49,6 +49,12 @@ class OutfitAgentSignature(dspy.Signature):
     - Be creative but practical with recommendations.
     - If the wardrobe is empty or lacks suitable items, inform the user politely.
     - When saving outfits, use descriptive names that reflect the occasion or style.
+    
+    CRITICAL: When recommending specific clothing items, ALWAYS include their ID in the format [ID:X] 
+    immediately after mentioning each item. For example:
+    "Te recomiendo la chaqueta negra [ID:5] con los jeans azules [ID:3] y zapatillas blancas [ID:8]."
+    
+    This is MANDATORY for every specific item you recommend so the system can display the images.
     """
 
     question = dspy.InputField(desc="The user's natural language question or request about outfits.")

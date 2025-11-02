@@ -60,60 +60,59 @@
         </div>
     </div>
 
-    <!-- Outfit Generator Section -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-            <h3 class="text-3xl font-bold text-gray-900 mb-6 text-center">
-                🎨 Genera un Outfit
-            </h3>
-            <p class="text-gray-600 text-center mb-8">
-                Describe la ocasión y te ayudaré a elegir el outfit perfecto
-            </p>
+    <!-- ChatGPT-Style Chat Interface -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden" style="height: 70vh; display: flex; flex-direction: column;">
+            <!-- Chat Header -->
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4">
+                <h3 class="text-2xl font-bold">💬 Asistente de Outfits</h3>
+                <p class="text-sm opacity-90">Pregúntame sobre outfits para cualquier ocasión</p>
+            </div>
             
-            <form id="outfit-form" class="space-y-6">
-                <div>
-                    <label for="occasion" class="block text-sm font-medium text-gray-700 mb-2">
-                        Ocasión / Evento
-                    </label>
-                    <input 
-                        type="text" 
-                        id="occasion" 
-                        name="occasion" 
-                        placeholder="Ej: fiesta de terror, entrevista de trabajo, salida casual..."
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                    >
-                </div>
-                
-                <div>
-                    <label for="preferences" class="block text-sm font-medium text-gray-700 mb-2">
-                        Preferencias (Opcional)
-                    </label>
-                    <textarea 
-                        id="preferences" 
-                        name="preferences" 
-                        rows="3"
-                        placeholder="Ej: quiero algo elegante, me gustan los colores oscuros..."
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    ></textarea>
-                </div>
-                
-                <button 
-                    type="submit" 
-                    class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 rounded-lg font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition transform hover:scale-105"
-                >
-                    ✨ Generar Outfit
-                </button>
-            </form>
-            
-            <!-- Outfit Result -->
-            <div id="outfit-result" class="mt-8 hidden">
-                <div class="border-t pt-6">
-                    <h4 class="text-xl font-bold text-gray-900 mb-4">Recomendación:</h4>
-                    <div id="outfit-recommendation" class="prose max-w-none">
-                        <!-- AI recommendation will appear here -->
+            <!-- Chat Messages Area -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                <!-- Welcome Message -->
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                            AI
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-white rounded-lg px-4 py-3 shadow-sm">
+                            <p class="text-gray-800">👋 ¡Hola! Soy tu asistente personal de moda. Puedo ayudarte a:</p>
+                            <ul class="mt-2 space-y-1 text-sm text-gray-600">
+                                <li>• Crear outfits para cualquier ocasión</li>
+                                <li>• Recomendarte combinaciones de tu guardarropa</li>
+                                <li>• Sugerirte qué ponerte según el evento</li>
+                            </ul>
+                            <p class="mt-2 text-gray-800">¿Para qué ocasión necesitas un outfit?</p>
+                        </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Chat Input Area -->
+            <div class="border-t bg-white px-6 py-4">
+                <form id="chat-form" class="flex space-x-3">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="Ej: Necesito un outfit para una fiesta formal..."
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        required
+                    >
+                    <button 
+                        type="submit" 
+                        id="send-btn"
+                        class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition flex items-center space-x-2"
+                    >
+                        <span>Enviar</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -163,34 +162,158 @@
             menu.classList.toggle('hidden');
         });
 
-        // Outfit form submission
-        document.getElementById('outfit-form').addEventListener('submit', async (e) => {
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Add user message to chat
+        function addUserMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3 justify-end';
+            messageDiv.innerHTML = `
+                <div class="flex-1 flex justify-end">
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg px-4 py-3 shadow-sm max-w-md">
+                        <p>${message}</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold">
+                        U
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Add AI message to chat
+        function addAIMessage(message, clothingItems = []) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3';
+            
+            let imagesHTML = '';
+            if (clothingItems && clothingItems.length > 0) {
+                imagesHTML = '<div class="mt-4 space-y-3">';
+                clothingItems.forEach((item, index) => {
+                    const typeLabel = item.tags.type ? item.tags.type[0] : 'Item';
+                    const orderLabels = ['🧥 ', '👕 ', '👖 ', '👟 ', '🎒 '];
+                    const emoji = orderLabels[item.order - 1] || '👔 ';
+                    
+                    imagesHTML += `
+                        <div class="flex items-center space-x-3 bg-gray-50 rounded-lg p-3">
+                            <img src="/${item.image_path}" alt="${item.name}" class="w-24 h-24 object-cover rounded-lg shadow-sm">
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-800">${emoji}${item.name}</p>
+                                <p class="text-sm text-gray-600">${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}</p>
+                                ${item.tags.color ? `<p class="text-xs text-gray-500">Color: ${item.tags.color.join(', ')}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                imagesHTML += '</div>';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                        AI
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-white rounded-lg px-4 py-3 shadow-sm">
+                        <p class="text-gray-800 whitespace-pre-wrap">${message}</p>
+                        ${imagesHTML}
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Add loading indicator
+        function addLoadingIndicator() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.className = 'flex items-start space-x-3';
+            loadingDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                        AI
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-white rounded-lg px-4 py-3 shadow-sm">
+                        <div class="flex space-x-2">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(loadingDiv);
+            scrollToBottom();
+        }
+
+        function removeLoadingIndicator() {
+            const loading = document.getElementById('loading-indicator');
+            if (loading) {
+                loading.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Handle form submission
+        chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const occasion = document.getElementById('occasion').value;
-            const preferences = document.getElementById('preferences').value;
+            const message = chatInput.value.trim();
+            if (!message) return;
             
-            showLoading();
+            // Add user message
+            addUserMessage(message);
+            
+            // Clear input and disable
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            // Show loading
+            addLoadingIndicator();
             
             try {
-                const result = await API.generateOutfit(occasion, preferences);
+                // Call API
+                const result = await API.generateOutfit(message, '');
                 
-                hideLoading();
+                // Remove loading
+                removeLoadingIndicator();
                 
                 if (result.success) {
-                    document.getElementById('outfit-result').classList.remove('hidden');
-                    document.getElementById('outfit-recommendation').innerHTML = 
-                        `<p class="text-gray-700 whitespace-pre-wrap">${result.recommendation}</p>`;
+                    // Clean the recommendation text (remove [ID:X] markers)
+                    let cleanText = result.recommendation.replace(/\[ID:\d+\]/g, '').trim();
                     
-                    showNotification('¡Outfit generado exitosamente!', 'success');
+                    // Add AI response with images
+                    addAIMessage(cleanText, result.clothing_items || []);
                 } else {
-                    showNotification('Error al generar outfit', 'error');
+                    addAIMessage('Lo siento, hubo un error al generar el outfit. Por favor intenta de nuevo.');
                 }
             } catch (error) {
-                hideLoading();
-                showNotification('Error: ' + error.message, 'error');
+                removeLoadingIndicator();
+                addAIMessage('Lo siento, hubo un error: ' + error.message);
+            } finally {
+                // Re-enable input
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
             }
         });
+
+        // Focus input on load
+        chatInput.focus();
     </script>
 </body>
 </html>

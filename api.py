@@ -305,6 +305,7 @@ async def generate_outfit(
         query = f"Create an outfit recommendation for {request.occasion}"
         if request.preferences:
             query += f" with preferences: {request.preferences}"
+        query += ". IMPORTANT: Include the specific clothing IDs in your response in the format: [ID:X] for each recommended item."
         
         # Call agent
         result = agent(question=query, wardrobe_context=wardrobe_context)
@@ -312,12 +313,72 @@ async def generate_outfit(
         # Save request to database
         save_user_request(conn, query, result.answer)
         
+        # Extract clothing IDs from the response
+        import re
+        id_pattern = r'\[ID:(\d+)\]'
+        clothing_ids = [int(match) for match in re.findall(id_pattern, result.answer)]
+        
+        # Get clothing items details in order
+        cursor = conn.cursor()
+        clothing_items = []
+        
+        # Define order priority for outfit items
+        type_order = {
+            'jacket': 1, 'coat': 1, 'blazer': 1,  # Outerwear
+            'shirt': 2, 'blouse': 2, 't-shirt': 2, 'top': 2, 'sweater': 2,  # Tops
+            'pants': 3, 'jeans': 3, 'trousers': 3, 'skirt': 3, 'shorts': 3,  # Bottoms
+            'shoes': 4, 'sneakers': 4, 'boots': 4, 'heels': 4,  # Footwear
+            'accessory': 5, 'hat': 5, 'scarf': 5, 'bag': 5  # Accessories
+        }
+        
+        for clothing_id in clothing_ids:
+            cursor.execute("""
+                SELECT c.id, c.image_path, c.name, c.created_at
+                FROM clothes c
+                WHERE c.id = ?
+            """, (clothing_id,))
+            
+            cloth = cursor.fetchone()
+            if cloth:
+                # Get tags
+                cursor.execute("""
+                    SELECT tag_type, tag_value
+                    FROM tags
+                    WHERE clothing_id = ?
+                """, (clothing_id,))
+                
+                tags = cursor.fetchall()
+                tags_dict = {}
+                for tag_type, tag_value in tags:
+                    if tag_type not in tags_dict:
+                        tags_dict[tag_type] = []
+                    tags_dict[tag_type].append(tag_value)
+                
+                # Determine order based on type
+                item_type = tags_dict.get('type', [''])[0].lower() if tags_dict.get('type') else ''
+                order = type_order.get(item_type, 99)
+                
+                clothing_items.append({
+                    "id": cloth[0],
+                    "image_path": cloth[1],
+                    "name": cloth[2],
+                    "tags": tags_dict,
+                    "created_at": cloth[3],
+                    "order": order
+                })
+        
+        # Sort items by order (outerwear → tops → bottoms → shoes → accessories)
+        clothing_items.sort(key=lambda x: x['order'])
+        
         return {
             "success": True,
-            "recommendation": result.answer
+            "recommendation": result.answer,
+            "clothing_items": clothing_items
         }
     
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
