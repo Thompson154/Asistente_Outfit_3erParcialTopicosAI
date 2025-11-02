@@ -49,9 +49,13 @@ class SaveOutfitRequest(BaseModel):
 
 
 # --- Dependency Functions ---
-def get_db_connection() -> sqlite3.Connection:
-    """Get database connection."""
-    return setup_database()
+def get_db_connection():
+    """Get database connection with proper cleanup."""
+    conn = setup_database()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def get_agent(conn: Annotated[sqlite3.Connection, Depends(get_db_connection)]) -> dspy.Module:

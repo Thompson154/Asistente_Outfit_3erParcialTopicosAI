@@ -197,22 +197,40 @@
         }
 
         function displayTags(tags) {
+            console.log('displayTags called with:', tags);
+            
             for (const [tagType, values] of Object.entries(tags)) {
                 const container = document.getElementById(`${tagType}-tags`);
+                if (!container) {
+                    console.error(`Container not found for tagType: ${tagType}`);
+                    continue;
+                }
                 container.innerHTML = '';
                 
-                values.forEach(value => {
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.className = 'tag-button px-4 py-2 border-2 border-gray-300 rounded-full text-sm font-medium hover:border-indigo-500';
-                    button.textContent = value;
-                    button.onclick = () => toggleTag(button, tagType, value);
-                    container.appendChild(button);
-                    
-                    // Auto-select all suggested tags
-                    toggleTag(button, tagType, value);
-                });
+                console.log(`Processing ${tagType}: ${values.length} values`);
+                
+                if (values.length === 0) {
+                    // Show message if no tags
+                    const msg = document.createElement('span');
+                    msg.className = 'text-sm text-gray-500 italic';
+                    msg.textContent = 'Sin etiquetas sugeridas';
+                    container.appendChild(msg);
+                } else {
+                    values.forEach(value => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'tag-button px-4 py-2 border-2 border-gray-300 rounded-full text-sm font-medium hover:border-indigo-500';
+                        button.textContent = value;
+                        button.onclick = () => toggleTag(button, tagType, value);
+                        container.appendChild(button);
+                        
+                        // Auto-select all suggested tags
+                        toggleTag(button, tagType, value);
+                    });
+                }
             }
+            
+            console.log('Final selectedTags:', selectedTags);
         }
 
         function toggleTag(button, tagType, value) {
@@ -233,12 +251,21 @@
             
             const name = document.getElementById('clothing-name').value;
             
+            // Debug: log what we're sending
+            console.log('=== SAVING CLOTHING ===');
+            console.log('Image Path:', uploadedImagePath);
+            console.log('Name:', name);
+            console.log('Selected Tags:', selectedTags);
+            console.log('Tags JSON:', JSON.stringify(selectedTags));
+            
             showLoading();
             
             try {
                 const result = await API.saveClothing(uploadedImagePath, name, selectedTags);
                 
                 hideLoading();
+                
+                console.log('Save result:', result);
                 
                 if (result.success) {
                     showNotification('¡Prenda guardada exitosamente!', 'success');
@@ -247,9 +274,11 @@
                     }, 1500);
                 } else {
                     showNotification('Error al guardar prenda', 'error');
+                    console.error('Save failed:', result);
                 }
             } catch (error) {
                 hideLoading();
+                console.error('Error saving clothing:', error);
                 showNotification('Error: ' + error.message, 'error');
             }
         });

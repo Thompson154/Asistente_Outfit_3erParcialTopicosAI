@@ -1282,6 +1282,7 @@ dependencies = [
     { name = "pillow" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -1292,6 +1293,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=10.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "requests", specifier = ">=2.32.5" },
 ]
 
 [[package]]

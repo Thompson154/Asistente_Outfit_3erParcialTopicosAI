@@ -11,7 +11,9 @@ def setup_database() -> sqlite3.Connection:
     - outfit_items: links clothing items to outfits
     - user_requests: stores user queries and AI responses
     """
-    conn = sqlite3.connect("outfit_assistant.db")
+    # check_same_thread=False allows using connection across different threads
+    # This is necessary for FastAPI's async nature
+    conn = sqlite3.connect("outfit_assistant.db", check_same_thread=False)
     cursor = conn.cursor()
 
     # Enable foreign key support

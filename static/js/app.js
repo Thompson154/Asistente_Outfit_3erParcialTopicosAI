@@ -52,13 +52,24 @@ const API = {
         formData.append('name', name);
         formData.append('tags', JSON.stringify(tags));
         
+        console.log('API.saveClothing called with:');
+        console.log('  imagePath:', imagePath);
+        console.log('  name:', name);
+        console.log('  tags:', tags);
+        console.log('  tags JSON:', JSON.stringify(tags));
+        
         const response = await fetch('/api/clothes', {
             method: 'POST',
             body: formData
         });
         
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
         if (!response.ok) {
-            throw new Error('Save failed');
+            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error('Server error:', errorData);
+            throw new Error(errorData.detail || 'Save failed');
         }
         
         return await response.json();
