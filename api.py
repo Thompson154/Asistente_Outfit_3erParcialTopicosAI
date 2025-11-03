@@ -22,6 +22,32 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
+# Initialize DSPy and agent ONCE at startup (singleton pattern)
+_agent_instance = None
+_agent_conn = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the agent once at application startup."""
+    global _agent_instance, _agent_conn
+    print("[Startup] Initializing Outfit Assistant Agent...")
+    
+    # Create a persistent connection for the agent
+    _agent_conn = setup_database()
+    
+    # Create the agent (this will configure DSPy once)
+    _agent_instance = create_agent(_agent_conn)
+    
+    print("[Startup] Agent initialized successfully!")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up on shutdown."""
+    global _agent_conn
+    if _agent_conn:
+        _agent_conn.close()
+        print("[Shutdown] Agent connection closed.")
+
 
 # --- Pydantic Models ---
 class ClothingItemResponse(BaseModel):
@@ -58,9 +84,12 @@ def get_db_connection():
         conn.close()
 
 
-def get_agent(conn: Annotated[sqlite3.Connection, Depends(get_db_connection)]) -> dspy.Module:
-    """Get the outfit assistant agent."""
-    return create_agent(conn)
+def get_agent() -> dspy.Module:
+    """Get the singleton agent instance."""
+    global _agent_instance
+    if _agent_instance is None:
+        raise RuntimeError("Agent not initialized. Make sure the application has started.")
+    return _agent_instance
 
 
 # --- HTML Routes ---
