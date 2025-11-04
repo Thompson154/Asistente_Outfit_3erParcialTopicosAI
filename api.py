@@ -17,39 +17,30 @@ from tools import upload_image, analyze_clothing_image, save_user_request
 
 app = FastAPI(title="Outfit Assistant AI")
 
-# Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
-# Initialize DSPy and agent ONCE at startup (singleton pattern)
+# Singleton pattern: Initialize DSPy and agent once at startup
 _agent_instance = None
 _agent_conn = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the agent once at application startup."""
     global _agent_instance, _agent_conn
-    print("[Startup] Initializing Outfit Assistant Agent...")
-    
-    # Create a persistent connection for the agent
+    print("Initializing Outfit Assistant Agent...")
     _agent_conn = setup_database()
-    
-    # Create the agent (this will configure DSPy once)
     _agent_instance = create_agent(_agent_conn)
-    
-    print("[Startup] Agent initialized successfully!")
+    print("Agent initialized successfully!")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Clean up on shutdown."""
     global _agent_conn
     if _agent_conn:
         _agent_conn.close()
-        print("[Shutdown] Agent connection closed.")
+        print("Agent connection closed.")
 
 
-# --- Pydantic Models ---
 class ClothingItemResponse(BaseModel):
     id: int
     image_path: str
@@ -74,9 +65,7 @@ class SaveOutfitRequest(BaseModel):
     occasion: str = ""
 
 
-# --- Dependency Functions ---
 def get_db_connection():
-    """Get database connection with proper cleanup."""
     conn = setup_database()
     try:
         yield conn
@@ -85,14 +74,30 @@ def get_db_connection():
 
 
 def get_agent() -> dspy.Module:
-    """Get the singleton agent instance."""
     global _agent_instance
     if _agent_instance is None:
         raise RuntimeError("Agent not initialized. Make sure the application has started.")
     return _agent_instance
 
 
-# --- HTML Routes ---
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload_page(request: Request):
+    return templates.TemplateResponse("upload.html", {"request": request})
+
+
+@app.get("/wardrobe", response_class=HTMLResponse)
+async def wardrobe_page(request: Request):
+    return templates.TemplateResponse("wardrobe.html", {"request": request})
+
+
+@app.get("/outfits", response_class=HTMLResponse)
+async def outfits_page(request: Request):
+    return templates.TemplateResponse("outfits.html", {"request": request})
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Render the home page."""
@@ -117,33 +122,20 @@ async def outfits_page(request: Request):
     return templates.TemplateResponse("outfits.html", {"request": request})
 
 
-# --- API Endpoints ---
 @app.post("/api/clothes/upload")
-async def upload_clothing_image(
-    file: UploadFile = File(...),
-) -> dict:
-    """
-    Upload a clothing image.
-    Returns the file path and suggested tags from AI analysis.
-    """
+async def upload_clothing_image(file: UploadFile = File(...)) -> dict:
     try:
-        # Read file data
         file_data = await file.read()
-        
-        # Upload image
         file_path = upload_image(file_data, file.filename)
         
         if file_path.startswith("Error"):
             raise HTTPException(status_code=400, detail=file_path)
         
-        # Analyze image with AI
         analysis_result = analyze_clothing_image(file_path)
         
         try:
-            # Parse JSON response
             tags = json.loads(analysis_result)
         except json.JSONDecodeError:
-            # If analysis fails, return with empty tags
             tags = {
                 "type": [],
                 "color": [],
@@ -167,23 +159,12 @@ async def save_clothing(
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
     image_path: str = Form(...),
     name: str = Form(...),
-    tags: str = Form(...),  # JSON string
+    tags: str = Form(...),
 ) -> dict:
-    """
-    Save a clothing item with its tags to the database.
-    """
     try:
-        # Parse tags JSON
-        print(f"[API] Received tags: {tags}")
         tags_dict = json.loads(tags)
-        print(f"[API] Parsed tags_dict: {tags_dict}")
-        
-        # Import save function
         from tools import save_clothing_item
-        
-        # Save to database
         result = save_clothing_item(conn, image_path, name, tags_dict)
-        print(f"[API] Save result: {result}")
         
         if result.startswith("Error"):
             raise HTTPException(status_code=400, detail=result)
@@ -191,12 +172,8 @@ async def save_clothing(
         return {"success": True, "message": result}
     
     except json.JSONDecodeError as e:
-        print(f"[API ERROR] JSON decode error: {e}")
         raise HTTPException(status_code=400, detail=f"Invalid tags format: {str(e)}")
     except Exception as e:
-        print(f"[API ERROR] Exception: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -204,26 +181,14 @@ async def save_clothing(
 async def get_all_clothes(
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
 ) -> list[ClothingItemResponse]:
-    """
-    Get all clothing items from the wardrobe.
-    """
     try:
         from tools import get_all_clothes as get_clothes_tool
-        
         result = get_clothes_tool(conn)
-        print(f"[API] get_all_clothes result: {result}")
-        
-        # Parse string result to list
         import ast
         clothes_list = ast.literal_eval(result)
-        print(f"[API] Parsed clothes_list: {clothes_list}")
-        
         return [ClothingItemResponse(**item) for item in clothes_list]
     
     except Exception as e:
-        print(f"[API ERROR] get_all_clothes exception: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -232,13 +197,9 @@ async def get_clothing_detail(
     clothing_id: int,
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
 ) -> ClothingItemResponse:
-    """
-    Get details of a specific clothing item.
-    """
     try:
         cursor = conn.cursor()
         
-        # Get clothing item
         cursor.execute("""
             SELECT id, image_path, name, created_at
             FROM clothes
@@ -250,7 +211,6 @@ async def get_clothing_detail(
         if not cloth:
             raise HTTPException(status_code=404, detail="Clothing item not found")
         
-        # Get tags
         cursor.execute("""
             SELECT tag_type, tag_value
             FROM tags
@@ -283,13 +243,8 @@ async def delete_clothing(
     clothing_id: int,
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
 ) -> dict:
-    """
-    Delete a clothing item.
-    """
     try:
         cursor = conn.cursor()
-        
-        # Get image path for deletion
         cursor.execute("SELECT image_path FROM clothes WHERE id = ?", (clothing_id,))
         result = cursor.fetchone()
         
@@ -297,16 +252,13 @@ async def delete_clothing(
             raise HTTPException(status_code=404, detail="Clothing item not found")
         
         image_path = result[0]
-        
-        # Delete from database (tags will be cascade deleted)
         cursor.execute("DELETE FROM clothes WHERE id = ?", (clothing_id,))
         conn.commit()
         
-        # Delete image file
         try:
             Path(image_path).unlink()
         except:
-            pass  # Ignore if file doesn't exist
+            pass
         
         return {"success": True, "message": "Clothing item deleted"}
     
@@ -322,42 +274,31 @@ async def generate_outfit(
     agent: Annotated[dspy.Module, Depends(get_agent)],
     request: OutfitRequest,
 ) -> dict:
-    """
-    Generate an outfit recommendation based on occasion and preferences.
-    """
     try:
-        # Get wardrobe context
         from tools import get_all_clothes as get_clothes_tool
         wardrobe_context = get_clothes_tool(conn)
         
-        # Create query for agent
         query = f"Create an outfit recommendation for {request.occasion}"
         if request.preferences:
             query += f" with preferences: {request.preferences}"
         query += ". IMPORTANT: Include the specific clothing IDs in your response in the format: [ID:X] for each recommended item."
         
-        # Call agent
         result = agent(question=query, wardrobe_context=wardrobe_context)
-        
-        # Save request to database
         save_user_request(conn, query, result.answer)
         
-        # Extract clothing IDs from the response
         import re
         id_pattern = r'\[ID:(\d+)\]'
         clothing_ids = [int(match) for match in re.findall(id_pattern, result.answer)]
         
-        # Get clothing items details in order
         cursor = conn.cursor()
         clothing_items = []
         
-        # Define order priority for outfit items
         type_order = {
-            'jacket': 1, 'coat': 1, 'blazer': 1,  # Outerwear
-            'shirt': 2, 'blouse': 2, 't-shirt': 2, 'top': 2, 'sweater': 2,  # Tops
-            'pants': 3, 'jeans': 3, 'trousers': 3, 'skirt': 3, 'shorts': 3,  # Bottoms
-            'shoes': 4, 'sneakers': 4, 'boots': 4, 'heels': 4,  # Footwear
-            'accessory': 5, 'hat': 5, 'scarf': 5, 'bag': 5  # Accessories
+            'jacket': 1, 'coat': 1, 'blazer': 1,
+            'shirt': 2, 'blouse': 2, 't-shirt': 2, 'top': 2, 'sweater': 2,
+            'pants': 3, 'jeans': 3, 'trousers': 3, 'skirt': 3, 'shorts': 3,
+            'shoes': 4, 'sneakers': 4, 'boots': 4, 'heels': 4,
+            'accessory': 5, 'hat': 5, 'scarf': 5, 'bag': 5
         }
         
         for clothing_id in clothing_ids:
@@ -369,7 +310,6 @@ async def generate_outfit(
             
             cloth = cursor.fetchone()
             if cloth:
-                # Get tags
                 cursor.execute("""
                     SELECT tag_type, tag_value
                     FROM tags
@@ -383,7 +323,6 @@ async def generate_outfit(
                         tags_dict[tag_type] = []
                     tags_dict[tag_type].append(tag_value)
                 
-                # Determine order based on type
                 item_type = tags_dict.get('type', [''])[0].lower() if tags_dict.get('type') else ''
                 order = type_order.get(item_type, 99)
                 
@@ -396,7 +335,6 @@ async def generate_outfit(
                     "order": order
                 })
         
-        # Sort items by order (outerwear → tops → bottoms → shoes → accessories)
         clothing_items.sort(key=lambda x: x['order'])
         
         return {
@@ -406,8 +344,6 @@ async def generate_outfit(
         }
     
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -416,18 +352,9 @@ async def save_outfit(
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
     request: SaveOutfitRequest,
 ) -> dict:
-    """
-    Save an outfit combination.
-    """
     try:
         from tools import save_outfit as save_outfit_tool
-        
-        result = save_outfit_tool(
-            conn,
-            request.name,
-            request.clothing_ids,
-            request.occasion
-        )
+        result = save_outfit_tool(conn, request.name, request.clothing_ids, request.occasion)
         
         if result.startswith("Error"):
             raise HTTPException(status_code=400, detail=result)
@@ -442,25 +369,14 @@ async def save_outfit(
 async def get_saved_outfits(
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
 ) -> list[dict]:
-    """
-    Get all saved outfits.
-    """
     try:
         from tools import get_saved_outfits as get_outfits_tool
-        
         result = get_outfits_tool(conn)
-        print(f"[API] get_saved_outfits result: {result}")
-        
-        # Parse string result to list
         import ast
         outfits_list = ast.literal_eval(result)
-        
         return outfits_list
     
     except Exception as e:
-        print(f"[API ERROR] get_saved_outfits exception: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -469,13 +385,9 @@ async def get_outfit_detail(
     outfit_id: int,
     conn: Annotated[sqlite3.Connection, Depends(get_db_connection)],
 ) -> dict:
-    """
-    Get details of a specific saved outfit.
-    """
     try:
         cursor = conn.cursor()
         
-        # Get outfit
         cursor.execute("""
             SELECT id, name, occasion, created_at
             FROM outfits
@@ -487,7 +399,6 @@ async def get_outfit_detail(
         if not outfit:
             raise HTTPException(status_code=404, detail="Outfit not found")
         
-        # Get outfit items
         cursor.execute("""
             SELECT c.id, c.image_path, c.name, oi.item_order
             FROM clothes c

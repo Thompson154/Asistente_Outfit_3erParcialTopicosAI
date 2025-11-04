@@ -3,23 +3,12 @@ from datetime import datetime
 
 
 def setup_database() -> sqlite3.Connection:
-    """
-    Creates a SQLite database for the Outfit Assistant with tables:
-    - clothes: stores clothing items and their images
-    - tags: stores tags associated with each clothing item
-    - outfits: stores saved outfit combinations
-    - outfit_items: links clothing items to outfits
-    - user_requests: stores user queries and AI responses
-    """
-    # check_same_thread=False allows using connection across different threads
-    # This is necessary for FastAPI's async nature
+    # check_same_thread=False required for FastAPI multi-threading
     conn = sqlite3.connect("outfit_assistant.db", check_same_thread=False)
     cursor = conn.cursor()
 
-    # Enable foreign key support
     cursor.execute("PRAGMA foreign_keys = ON;")
 
-    # --- Table 1: Clothes ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS clothes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +18,6 @@ def setup_database() -> sqlite3.Connection:
         );
     """)
 
-    # --- Table 2: Tags ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,18 +28,9 @@ def setup_database() -> sqlite3.Connection:
         );
     """)
 
-    # Create index for faster tag queries
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_tags_clothing 
-        ON tags(clothing_id);
-    """)
-    
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_tags_type_value 
-        ON tags(tag_type, tag_value);
-    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_tags_clothing ON tags(clothing_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_tags_type_value ON tags(tag_type, tag_value);")
 
-    # --- Table 3: Outfits ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS outfits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +40,6 @@ def setup_database() -> sqlite3.Connection:
         );
     """)
 
-    # --- Table 4: Outfit Items ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS outfit_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +51,6 @@ def setup_database() -> sqlite3.Connection:
         );
     """)
 
-    # --- Table 5: User Requests ---
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,5 +61,5 @@ def setup_database() -> sqlite3.Connection:
     """)
 
     conn.commit()
-    print("[Database] Outfit Assistant database initialized successfully.")
+    print("Outfit Assistant database initialized")
     return conn

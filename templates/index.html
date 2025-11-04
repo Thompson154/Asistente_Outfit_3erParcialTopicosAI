@@ -14,7 +14,7 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
                     <h1 class="text-2xl font-bold gradient-bg bg-clip-text text-transparent">
-                        👔 Outfit Assistant
+                        Outfit Assistant
                     </h1>
                 </div>
                 <div class="hidden md:flex space-x-4">
@@ -51,10 +51,10 @@
             <p class="text-xl mb-8">Organiza tu guardarropa y recibe recomendaciones de outfits con IA</p>
             <div class="flex justify-center gap-4">
                 <a href="/upload" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-                    📷 Subir Prenda
+                    Subir Prenda
                 </a>
                 <a href="/wardrobe" class="bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-800 transition">
-                    👗 Ver Guardarropa
+                    Ver Guardarropa
                 </a>
             </div>
         </div>
@@ -65,7 +65,7 @@
         <div class="bg-white rounded-xl shadow-lg overflow-hidden" style="height: 70vh; display: flex; flex-direction: column;">
             <!-- Chat Header -->
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4">
-                <h3 class="text-2xl font-bold">💬 Asistente de Outfits</h3>
+                <h3 class="text-2xl font-bold">Asistente de Outfits</h3>
                 <p class="text-sm opacity-90">Pregúntame sobre outfits para cualquier ocasión</p>
             </div>
             
@@ -80,7 +80,7 @@
                     </div>
                     <div class="flex-1">
                         <div class="bg-white rounded-lg px-4 py-3 shadow-sm">
-                            <p class="text-gray-800">👋 ¡Hola! Soy tu asistente personal de moda. Puedo ayudarte a:</p>
+                            <p class="text-gray-800">¡Hola! Soy tu asistente personal de moda. Puedo ayudarte a:</p>
                             <ul class="mt-2 space-y-1 text-sm text-gray-600">
                                 <li>• Crear outfits para cualquier ocasión</li>
                                 <li>• Recomendarte combinaciones de tu guardarropa</li>
@@ -125,21 +125,28 @@
         <div class="grid md:grid-cols-3 gap-8">
             <div class="text-center">
                 <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">📸</span>
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
                 </div>
                 <h4 class="text-xl font-semibold mb-2">1. Sube tus Prendas</h4>
                 <p class="text-gray-600">Toma fotos de tu ropa y súbelas a la plataforma</p>
             </div>
             <div class="text-center">
                 <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">🏷️</span>
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
                 </div>
                 <h4 class="text-xl font-semibold mb-2">2. Etiquetado Automático</h4>
                 <p class="text-gray-600">La IA analiza y etiqueta cada prenda automáticamente</p>
             </div>
             <div class="text-center">
                 <div class="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">✨</span>
+                    <svg class="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                    </svg>
                 </div>
                 <h4 class="text-xl font-semibold mb-2">3. Recibe Recomendaciones</h4>
                 <p class="text-gray-600">Genera outfits personalizados para cualquier ocasión</p>
@@ -197,14 +204,14 @@
                 imagesHTML = '<div class="mt-4 space-y-3">';
                 clothingItems.forEach((item, index) => {
                     const typeLabel = item.tags.type ? item.tags.type[0] : 'Item';
-                    const orderLabels = ['🧥 ', '👕 ', '👖 ', '👟 ', '🎒 '];
-                    const emoji = orderLabels[item.order - 1] || '👔 ';
+                    const orderLabels = ['Outerwear', 'Top', 'Bottom', 'Shoes', 'Accessory'];
+                    const label = orderLabels[item.order - 1] || 'Item';
                     
                     imagesHTML += `
                         <div class="flex items-center space-x-3 bg-gray-50 rounded-lg p-3">
                             <img src="/${item.image_path}" alt="${item.name}" class="w-24 h-24 object-cover rounded-lg shadow-sm">
                             <div class="flex-1">
-                                <p class="font-semibold text-gray-800">${emoji}${item.name}</p>
+                                <p class="font-semibold text-gray-800">${item.name}</p>
                                 <p class="text-sm text-gray-600">${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}</p>
                                 ${item.tags.color ? `<p class="text-xs text-gray-500">Color: ${item.tags.color.join(', ')}</p>` : ''}
                             </div>
